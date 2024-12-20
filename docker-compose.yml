@@ -1,0 +1,86 @@
+version: '3'
+
+services:
+  master:
+    build: 
+      context: ./master
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+    networks:
+      - mapreduce_network
+    environment:
+      - HOST=0.0.0.0
+      - PORT=5001
+      - NUM_MAPPERS=2
+      - NUM_REDUCERS=2
+      - INPUT_FILE=data/cit-HepTh.txt
+      - OUTPUT_FILE=output/final_citation_counts.txt
+
+  mapper1:
+    build: 
+      context: ./worker/mapper
+    environment:
+      - WORKER_ID=mapper1
+      - WORKER_PORT=5002
+      - MASTER_HOST=master
+      - HOST=0.0.0.0
+      - NUM_REDUCERS=2  
+    depends_on:
+      - master
+    volumes:
+      - ./output:/app/output
+    networks:
+      - mapreduce_network
+
+  mapper2:
+    build: 
+      context: ./worker/mapper
+    environment:
+      - WORKER_ID=mapper2
+      - WORKER_PORT=5003
+      - MASTER_HOST=master
+      - HOST=0.0.0.0
+      - NUM_REDUCERS=2  # Add this
+    depends_on:
+      - master
+    volumes:
+      - ./output:/app/output
+    networks:
+      - mapreduce_network
+
+  reducer1:
+    build: 
+      context: ./worker/reducer
+    environment:
+      - WORKER_ID=reducer1
+      - WORKER_PORT=5004
+      - MASTER_HOST=master
+      - HOST=0.0.0.0
+    depends_on:
+      - master
+    volumes:
+      - ./output:/app/output
+    networks:
+      - mapreduce_network
+
+  reducer2:
+    build: 
+      context: ./worker/reducer
+    environment:
+      - WORKER_ID=reducer2
+      - WORKER_PORT=5005
+      - MASTER_HOST=master
+      - HOST=0.0.0.0
+    depends_on:
+      - master
+    volumes:
+      - ./output:/app/output
+    networks:
+      - mapreduce_network
+
+networks:
+  mapreduce_network:
+    driver: bridge
